@@ -18,17 +18,33 @@ public class ClientService {
 	@Autowired
 	ClientRepository repository;
 	
-	@Transactional
-	public Page<ClientDTO> findAllPaged(PageRequest pageRequest) {
+	@Transactional(readOnly = true)
+	public Page<ClientDTO> readAllPaged(PageRequest pageRequest) {
 		Page<Client> page = repository.findAll(pageRequest);
 		return page.map(x -> new ClientDTO(x));
 	}
 	
-	@Transactional
-	public ClientDTO findById(Long id){
+	@Transactional(readOnly = true)
+	public ClientDTO readById(Long id){
 		Optional<Client> objOptional = repository.findById(id);
 		Client entity = objOptional.get();
 		ClientDTO dto = new ClientDTO(entity);
 		return dto;
+	}
+	
+	@Transactional
+	public ClientDTO create(ClientDTO dto) {
+		Client entity = new Client();
+		copyDtoToEntity(dto, entity);
+		repository.save(entity);
+		return new ClientDTO(entity);
+	}
+	
+	private void copyDtoToEntity(ClientDTO dto, Client entity) {
+		entity.setName(dto.getName());
+		entity.setCpf(dto.getCpf());
+		entity.setIncome(dto.getIncome());
+		entity.setBirthDate(dto.getBirthDate());
+		entity.setChildren(dto.getChildren());
 	}
 }
