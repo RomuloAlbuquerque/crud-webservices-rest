@@ -26,7 +26,7 @@ import com.projeto.service.ClientService;
 public class ClientResource {
 	
 	@Autowired
-	ClientService service;
+	private ClientService service;
 	
 	@GetMapping
 	public ResponseEntity<Page<ClientDTO>> findAllPaged(

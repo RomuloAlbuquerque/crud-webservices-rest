@@ -3,6 +3,7 @@ package com.projeto.service;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -11,27 +12,27 @@ import org.springframework.transaction.annotation.Transactional;
 import com.projeto.dto.ClientDTO;
 import com.projeto.entity.Client;
 import com.projeto.repository.ClientRepository;
+import com.projeto.service.exception.ResourceNotFoundException;
 
 @Service
 public class ClientService {
 	
 	@Autowired
-	ClientRepository repository;
+	private ClientRepository repository;
 	
 	@Transactional(readOnly = true)
 	public Page<ClientDTO> readAllPaged(PageRequest pageRequest) {
 		Page<Client> page = repository.findAll(pageRequest);
 		return page.map(x -> new ClientDTO(x));
 	}
-	
 	@Transactional(readOnly = true)
 	public ClientDTO readById(Long id){
 		Optional<Client> objOptional = repository.findById(id);
-		Client entity = objOptional.get();
+		//aqui tem exceção
+		Client entity = objOptional.orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado"));
 		ClientDTO dto = new ClientDTO(entity);
 		return dto;
 	}
-	
 	@Transactional
 	public ClientDTO create(ClientDTO dto) {
 		Client entity = new Client();
@@ -39,21 +40,27 @@ public class ClientService {
 		repository.save(entity);
 		return new ClientDTO(entity);
 	}
-	
 	@Transactional
 	public ClientDTO update(Long id, ClientDTO dto) {
-		Client entity = repository.getOne(id);
-		copyDtoToEntity(dto, entity);
-		entity = repository.save(entity);
-		return new ClientDTO(entity);
-		
+		try {
+			Client entity = repository.getOne(id);
+			copyDtoToEntity(dto, entity);
+			entity = repository.save(entity);
+			return new ClientDTO(entity);
+		}
+		catch(ResourceNotFoundException e) {
+			throw new ResourceNotFoundException("Id não encontrado: "+id);
+		}
 	}
-	
 	@Transactional
 	public void delete(Long id) {
-		repository.deleteById(id);
+		try {
+			repository.deleteById(id);
+		}
+		catch(EmptyResultDataAccessException e) {
+			throw new ResourceNotFoundException("Id não encontrado: "+id);
+		}
 	}
-	
 	private void copyDtoToEntity(ClientDTO dto, Client entity) {
 		entity.setName(dto.getName());
 		entity.setCpf(dto.getCpf());
